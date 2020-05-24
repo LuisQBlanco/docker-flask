@@ -1,0 +1,117 @@
+# Builder #
+
+# Pull official base image
+FROM python:3.8-alpine as builder
+# MAINTAINER LuisQuinones
+
+# Set work directory
+WORKDIR /djangonginx
+
+# set environment variables
+# '''   PYTHONDONTWRITEBYTECODE: Prevents Python from writing pyc files to disc (equivalent to python -B option)
+#       PYTHONUNBUFFERED: Prevents Python from buffering stdout and stderr (equivalent to python -u option)
+# '''
+
+ENV PYTHONDONTWRITEBYCOSE 1
+ENV PYTHONUNBUFFERED 1
+
+
+
+# Install psycopg2 dependencies
+RUN apk add --update --no-cache postgresql-client
+
+RUN apk add --update --no-cache --virtual .tmp-build-deps \
+      gcc libc-dev linux-headers postgresql-dev \
+      musl-dev
+
+RUN pip install --upgrade pip
+RUN pip install flake8
+
+# Copy project
+COPY ./app /djangonginx/
+
+RUN flake8 --ignore=E501,F401 .
+
+# Install dependencies
+COPY requirements.txt /djangonginx/
+
+# RUN pip install -r /djangonginx/requirements.txt
+RUN pip wheel --no-cache-dir --no-deps --wheel-dir /djangonginx/wheels -r /djangonginx/requirements.txt
+
+
+
+# RUN apk update --no-cache
+RUN apk del .tmp-build-deps
+
+#########
+# FINAL #
+#########
+
+# Pull official base image
+FROM python:3.8-alpine
+
+# create directory for the app user
+RUN mkdir -p /home/djangonginx
+
+# Create the app user
+RUN addgroup -S app && adduser -S app -G app
+
+# Create the appropiate directories
+ENV HOME=/home/djangonginx
+ENV APP_HOME=/home/djangonginx/web
+RUN mkdir $APP_HOME
+
+WORKDIR $APP_HOME 
+
+# Install dependencies
+RUN apk update && apk add libpq
+COPY --from=builder /djangonginx/wheels /wheels
+COPY --from=builder /djangonginx/requirements.txt .
+RUN pip install --upgrade pip
+RUN pip install --no-cache /wheels/*
+
+# Copy project
+COPY ./app $APP_HOME
+
+# # Copy entrypoint.sh
+# COPY ./app/entrypoint.prod.sh $APP_HOME
+
+# chown all the file to the app user
+RUN chown -R app:app $APP_HOME
+
+# Change to app user
+USER app
+
+# Run entrypoint.sh
+
+ENTRYPOINT [ "/home/djangonginx/entrypoint.prod.sh" ]
+
+# RUN apk add --update --no-cache postgresql-client 
+#       This is necessary to install Pillow
+#       \
+#       jpeg-dev
+# RUN apk add --update --no-cache --virtual .tmp-build-deps \
+#       gcc libc-dev linux-headers postgresql-dev 
+#       This is necessary to install Pillow
+#       \
+#       musl-dev zlib \
+#       zlib-dev libjpeg
+      
+# RUN pip install -r /billdjpostg/requirements.txt
+
+# RUN apk update --no-cache
+# RUN apk del .tmp-build-deps
+
+# RUN pip3 install -U pylint
+
+
+# RUN fmkdir /billdjpostg
+
+# COPY ./app /billdjpostg/
+
+# RUN mkdir -p /vol/web/media
+# RUN mkdir -p /vol/web/static
+# RUN adduser -D userlq
+# RUN chown -R userlq:userlq /vol/
+# RUN chmod -R 755 /vol/web
+# USER userlq
