@@ -1,4 +1,4 @@
-from flask import Flask, render_template, url_for
+from flask import Flask, render_template, url_for, request, redirect
 
 app = Flask(__name__)
 
@@ -14,6 +14,22 @@ def my_home():
 def html_page(page_name):
     return render_template(page_name)
 
+def write_to_file(data):
+    with open('database.txt', mode='a') as database:
+        email = data["email"]
+        subject = data["subject"]
+        message = data["message"]
+        file = database.write(f'\n{email},{subject},{message}')
+
+@app.route('/submit_form', methods=['POST', 'GET'])
+def submit_form():
+
+    if request.method == 'POST':
+        data = request.form.to_dict()
+        write_to_file(data)
+        return redirect('thankyou.html')
+    else:
+        return 'something went wrong. Try again!'
 
 
 # @app.route('/about.html')
@@ -33,14 +49,6 @@ def html_page(page_name):
 #     return render_template('contact.html')
 
 
-
-
-
-# @app.route('/favicon.ico')
-# def favicon():
-#     return send_from_directory(os.path.join(app.root_path, 'static'),
-#                                'favicon.ico', mimetype='image/vnd.microsoft.icon')
-
-@app.route('/blog/2020/dogs')
-def blog2():
-    return 'This is my dog'
+# @app.route('/blog/2020/dogs')
+# def blog2():
+#     return 'This is my dog'
