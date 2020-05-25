@@ -44,7 +44,7 @@ services:
 
   db:
     restart: unless-stopped
-    container_name: postgres_db
+    container_name: postgres_db_flask
     image: postgres:12-alpine
     
     restart: unless-stopped
@@ -73,7 +73,7 @@ networks:
     ipam: 
       driver: default
       config: 
-        - subnet: 172.29.3.0/16
+        - subnet: 173.29.3.0/16
 
 # Docker-compose_prod.yml
 # This is the Docker-compose_prod use for develop the project in python 3.8, django 3, Gunicorn
